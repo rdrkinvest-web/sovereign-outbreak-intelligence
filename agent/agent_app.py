@@ -24,7 +24,7 @@ from .chooser import model_chooser
 from .coordinator import Chooser, Transport, investigate
 from .events import EventSink
 from .flower_transport import FlowerTransport
-from .model_client import FlowerModelClient
+from .model_client import MODEL_TIMEOUT_SECONDS, FlowerModelClient
 from .node_runtime import run_national_node
 from .prompts import COORDINATOR_BRIEF
 from .schemas import RESPONSE_ADAPTER, FinalAssessment
@@ -177,6 +177,7 @@ def write_brief(assessment: FinalAssessment, model: str, write: Callable[[str], 
             base_url=os.environ["FLWR_RUNTIME_BASE_URL"],
             api_key=os.environ["FLWR_RUNTIME_API_KEY"],
             max_retries=0,
+            timeout=MODEL_TIMEOUT_SECONDS,
         )
         stream = client.responses.create(
             model=model,

@@ -39,14 +39,48 @@ PAGE = Path(__file__).with_name("app.html")
 MAX_PROMPT = 2000
 NEBIUS_TTL_SECONDS = 60
 
+# Models a live run may use (an allowlist: the page can't send arbitrary names).
+# "none" runs every agent deterministically, the demo's plan B.
+NO_MODEL = "none"
+MODELS = [
+    {"id": "openai/gpt-5.6-sol", "label": "GPT-5.6 Sol"},
+    {"id": "flwrlabs/endeavor-1.0", "label": "Endeavor 1.0 (Flower)"},
+    {"id": NO_MODEL, "label": "No model (deterministic)"},
+]
+MODEL_IDS = {m["id"] for m in MODELS}
+
+
+def default_model() -> str:
+    """The app's configured model (pyproject.toml stays the single source of truth)."""
+    import tomllib
+
+    try:
+        config = tomllib.loads((REPO / "pyproject.toml").read_text())["tool"]["flwr"]["app"]["config"]
+        model = str(config.get("model", ""))
+    except (OSError, KeyError, tomllib.TOMLDecodeError):
+        model = ""
+    return model if model in MODEL_IDS else MODELS[0]["id"]
+
+
+def run_overrides(model: str) -> dict[str, Any]:
+    """Per-run app config for the chosen model, merged into context.run_config by Flower."""
+    if model == NO_MODEL:
+        return {"node-agents": False, "ai-follow-up": False, "llm-brief": False}
+    return {"model": model}
+
+
+def model_label(model: str) -> str:
+    return next((m["label"] for m in MODELS if m["id"] == model), model)
+
 
 class Run:
     """One prompt's run: an append-only list of items the page streams over SSE."""
 
-    def __init__(self, prompt: str, target: str) -> None:
+    def __init__(self, prompt: str, target: str, model: str = "") -> None:
         self.key = uuid.uuid4().hex[:12]
         self.prompt = prompt
         self.target = target
+        self.model = model
         self.items: list[dict[str, Any]] = []
         self.done = False
         self.flower_run_id: int | None = None
@@ -164,7 +198,7 @@ class Flower:
         }
 
     def run(self, run: Run, federation: str) -> None:
-        from flwr.cli.chat.chat_app import format_failure_event, parse_task_event, start_chat_run
+        from flwr.cli.chat.chat_app import format_failure_event, parse_task_event
         from flwr.cli.chat.chat_local_agent import build_local_agent
         from flwr.cli.constant import (
             CHAT_FAILURE_EVENTS,
@@ -176,10 +210,12 @@ class Flower:
         run.status("starting", "Building the app from this repo and starting a run on SuperGrid…")
         stub = self.stub()
         agent = build_local_agent(REPO)
-        run.flower_run_id, _ = start_chat_run(
-            stub, run.prompt, federation or None, None, agent.app_spec, agent.fab_hash, agent.fab_content
+        run.flower_run_id = start_run(stub, run.prompt, federation, agent, run_overrides(run.model))
+        run.status(
+            "running",
+            f"Run {run.flower_run_id} started on {federation or 'the default federation'} "
+            f"with {model_label(run.model)}.",
         )
-        run.status("running", f"Run {run.flower_run_id} started on {federation or 'the default federation'}.")
         for res in stub.StreamRunEvents(StreamRunEventsRequest(run_id=run.flower_run_id)):
             event_type, payload = parse_task_event(res.task_event)
             if event_type == "soi.event" and isinstance(payload.get("event"), dict):
@@ -199,6 +235,28 @@ class Flower:
 
         if run.flower_run_id is not None:
             self.stub().StopRun(StopRunRequest(run_id=run.flower_run_id))
+
+
+def start_run(stub: Any, prompt: str, federation: str, agent: Any, overrides: dict[str, Any]) -> int:
+    """Start one AgentApp run from the local FAB, as flwr chat's start_chat_run does,
+    plus per-run config overrides (start_chat_run has no parameter for them)."""
+    from flwr.cli.utils import flwr_cli_exc_handler
+    from flwr.common.serde import user_config_to_proto
+    from flwr.proto.control_pb2 import StartRunRequest
+    from flwr.proto.fab_pb2 import Fab
+
+    req = StartRunRequest(
+        app_spec="",  # SuperLink derives the app ID from the submitted FAB content
+        user_prompt=prompt,
+        federation=federation or "",
+        fab=Fab(hash_str=agent.fab_hash or "", content=agent.fab_content or b""),
+        override_config=user_config_to_proto(overrides),
+    )
+    with flwr_cli_exc_handler():
+        res = stub.StartRun(req)
+    if not res.HasField("run_id"):
+        raise RuntimeError("SuperGrid did not start the run.")
+    return res.run_id
 
 
 class Nebius:
@@ -272,8 +330,8 @@ class Console:
         self.offline_delay = offline_delay
         self.runs: dict[str, Run] = {}
 
-    def start(self, prompt: str, target: str, federation: str) -> Run:
-        run = Run(prompt, target)
+    def start(self, prompt: str, target: str, federation: str, model: str = "") -> Run:
+        run = Run(prompt, target, model or default_model())
         self.runs[run.key] = run
 
         def work() -> None:
@@ -348,7 +406,14 @@ def make_handler(console: Console, allowed_hosts: set[str]) -> type[BaseHTTPRequ
                 self.end_headers()
                 self.wfile.write(data)
             elif self.path == "/api/status":
-                self._json(200, {"flower": console.flower.status(), "nebius": console.nebius.status()})
+                self._json(
+                    200,
+                    {
+                        "flower": console.flower.status(),
+                        "nebius": console.nebius.status(),
+                        "models": {"options": MODELS, "default": default_model()},
+                    },
+                )
             elif (m := re.fullmatch(r"/api/runs/(\w+)/events", self.path)) and m.group(1) in console.runs:
                 self._stream(console.runs[m.group(1)])
             else:
@@ -369,7 +434,10 @@ def make_handler(console: Console, allowed_hosts: set[str]) -> type[BaseHTTPRequ
                     return self._json(400, {"error": f"Keep the prompt under {MAX_PROMPT} characters."})
                 if target not in {"supergrid", "offline"}:
                     return self._json(400, {"error": "Choose Live SuperGrid or Offline rehearsal."})
-                run = console.start(prompt, target, str(body.get("federation") or ""))
+                model = str(body.get("model") or default_model())
+                if model not in MODEL_IDS:
+                    return self._json(400, {"error": "Choose a model from the list."})
+                run = console.start(prompt, target, str(body.get("federation") or ""), model)
                 self._json(201, {"key": run.key})
             elif (m := re.fullmatch(r"/api/runs/(\w+)/stop", self.path)) and m.group(1) in console.runs:
                 if self._body() is None:

@@ -121,9 +121,16 @@ def run_node(root: Path, payload: str) -> str:
 class SuperLinkGrid:
     """Routes coordinator messages to simulated national SuperNodes."""
 
-    def __init__(self, roots: dict[str, Path], failures: dict[str, int] | None = None) -> None:
+    def __init__(
+        self,
+        roots: dict[str, Path],
+        failures: dict[str, int] | None = None,
+        noisy: set[str] | None = None,
+    ) -> None:
         self.roots = roots
         self.failures = dict(failures or {})  # country -> tasks that fail before succeeding
+        self.noisy = noisy or set()  # countries whose answers also come with an error report
+        self.pushes: dict[str, int] = {}
         self.nodes = {str(100 + i): f"{c} MoH" for i, c in enumerate(roots)}
         self.replies: dict[str, dict] = {}
         self.ids = itertools.count(1)
@@ -144,6 +151,7 @@ class SuperLinkGrid:
             for m in args["messages"]:
                 message_id = f"msg-{next(self.ids)}"
                 country = self.nodes[m["dst_node_id"]].split()[0]
+                self.pushes[country] = self.pushes.get(country, 0) + 1
                 reply = {
                     "message_id": f"reply-{message_id}",
                     "reply_to_message_id": message_id,
@@ -160,7 +168,14 @@ class SuperLinkGrid:
                 results.append({"message_id": message_id, "error": None})
             return _output(call_id, {"results": results})
         assert name == "pull_messages"
-        messages = [self.replies[i] for i in args["message_ids"]]
+        messages = []
+        for i in args["message_ids"]:
+            reply = self.replies[i]
+            country = self.nodes[reply["src_node_id"]].split()[0]
+            if country in self.noisy and reply["payload"] is not None:
+                # As seen live: the node's answer plus an error report for the same task.
+                messages.append({**reply, "message_id": reply["message_id"] + "-err", "payload": None, "error": "Exit Code 800"})
+            messages.append(reply)
         return _output(call_id, {"messages": messages, "pending_message_ids": []})
 
 
@@ -237,6 +252,13 @@ def test_transient_node_failure_is_retried_once(tmp_path: Path) -> None:
     text = _coordinate_with(grid).text
     assert "Cross-border pattern:** yes (Kenya, Uganda)" in text
     assert "Messages exchanged: **10**" in text  # the retry is transport-level, not a new message
+
+
+def test_answer_with_error_report_is_accepted_without_retry(tmp_path: Path) -> None:
+    grid = SuperLinkGrid({c: node_dir(tmp_path, c) for c in NODES}, noisy={"Kenya", "Uganda"})
+    text = _coordinate_with(grid).text
+    assert "Cross-border pattern:** yes (Kenya, Uganda)" in text
+    assert grid.pushes == {"Kenya": 2, "Tanzania": 1, "Uganda": 2}  # scan + follow-up, never resent
 
 
 def test_node_failing_twice_still_fails_loudly(tmp_path: Path) -> None:

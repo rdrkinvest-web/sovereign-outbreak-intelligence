@@ -105,7 +105,7 @@ key to its VM (dry run by default).
 
 | Key | Default | Effect |
 |---|---|---|
-| `model` | `openai/gpt-5.6-sol` | one model for every agent |
+| `model` | `openai/gpt-5.6-sol` | one model for every agent; Flower's `flwrlabs/endeavor-1.0` also works (pick it in the console's model selector) |
 | `node-agents` | `true` | `false`: countries answer deterministically, no model |
 | `ai-follow-up` | `true` | `false`: a fixed rule picks round 3 |
 | `llm-brief` | `true` | coordinator's model writes a short brief |

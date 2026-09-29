@@ -11,6 +11,12 @@ import os
 from typing import Any, Protocol
 
 
+# A healthy call takes seconds; a failing provider was seen taking ~80 s to
+# return 502. Cap each call so an outage falls back well inside SuperGrid's
+# 5-minute task limit.
+MODEL_TIMEOUT_SECONDS = 45.0
+
+
 class ModelClient(Protocol):
     def respond(
         self,
@@ -27,9 +33,12 @@ class ModelClient(Protocol):
 class FlowerModelClient:
     """Connects on first use, so paths that never need a model never touch one."""
 
-    def __init__(self, model: str, max_output_tokens: int = 1200) -> None:
+    def __init__(
+        self, model: str, max_output_tokens: int = 1200, timeout: float = MODEL_TIMEOUT_SECONDS
+    ) -> None:
         self._model = model
         self._max_output_tokens = max_output_tokens
+        self._timeout = timeout
         self._client: Any = None
 
     def _connect(self) -> Any:
@@ -40,6 +49,7 @@ class FlowerModelClient:
                 base_url=os.environ["FLWR_RUNTIME_BASE_URL"],
                 api_key=os.environ["FLWR_RUNTIME_API_KEY"],
                 max_retries=0,  # each request creates a Flower model task
+                timeout=self._timeout,  # a failing provider falls back fast
             )
         return self._client
 

@@ -129,4 +129,7 @@ class FlowerTransport:
                 failed[country] = message["error"]
             else:
                 replies[country] = message["payload"]
+        # A node can send its (fallback) answer and still have an error reported
+        # for the same task, e.g. when its model call failed. The answer wins.
+        failed = {c: e for c, e in failed.items() if c not in replies}
         return replies, failed

@@ -75,3 +75,39 @@ def test_requests_are_validated(port: int) -> None:
     conn = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
     conn.request("POST", "/api/runs", "prompt=hi", {"Content-Type": "application/x-www-form-urlencoded"})
     assert conn.getresponse().status == 415
+
+
+def test_status_lists_models_with_the_configured_default(port: int) -> None:
+    conn = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+    conn.request("GET", "/api/status")
+    models = json.loads(conn.getresponse().read())["models"]
+    ids = [m["id"] for m in models["options"]]
+    assert "flwrlabs/endeavor-1.0" in ids and "none" in ids
+    assert models["default"] == server.default_model() == "openai/gpt-5.6-sol"
+
+
+def test_unknown_model_is_rejected(port: int) -> None:
+    body = {"prompt": "Investigate a shared febrile event", "target": "offline", "model": "evil/model"}
+    assert _post(port, "/api/runs", body)[0] == 400
+
+
+def test_model_choice_becomes_run_config_overrides() -> None:
+    assert server.run_overrides("flwrlabs/endeavor-1.0") == {"model": "flwrlabs/endeavor-1.0"}
+    assert server.run_overrides("none") == {"node-agents": False, "ai-follow-up": False, "llm-brief": False}
+
+
+def test_start_run_sends_the_overrides_to_supergrid() -> None:
+    sent = []
+
+    class Stub:
+        def StartRun(self, req):  # noqa: N802 - Flower's method name
+            sent.append(req)
+            return type("Res", (), {"run_id": 42, "HasField": lambda self, f: f == "run_id"})()
+
+    agent = type("Agent", (), {"fab_hash": "abc", "fab_content": b"fab"})()
+    run_id = server.start_run(Stub(), "Investigate", "@pbggo/east-africa-moh", agent, {"model": "flwrlabs/endeavor-1.0", "llm-brief": False})
+    req = sent[0]
+    assert run_id == 42
+    assert req.override_config["model"].string == "flwrlabs/endeavor-1.0"
+    assert req.override_config["llm-brief"].bool is False
+    assert (req.federation, req.user_prompt, req.app_spec) == ("@pbggo/east-africa-moh", "Investigate", "")

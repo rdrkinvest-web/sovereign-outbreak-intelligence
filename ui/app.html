@@ -204,6 +204,8 @@ footer{font-size:13px;color:var(--muted);max-width:80ch}
         <button id="t-supergrid" aria-pressed="true">Live on SuperGrid</button>
         <button id="t-offline" aria-pressed="false">Offline rehearsal</button>
       </div>
+      <label class="small muted" for="model">Model</label>
+      <select id="model"></select>
       <span class="small muted" id="targetNote"></span>
       <span class="spacer"></span>
       <button id="run" class="primary">Run</button>
@@ -360,12 +362,19 @@ function drawStatus(){
   $("vmChips").innerHTML = nb.available && vms.length
     ? vms.map(([c, s]) => '<span class="chip ' + (s === "running" ? "ok" : "warn") + '"><span class="dot ' + (s === "running" ? "ok" : "warn") + '"></span>' + esc(c) + " · " + esc(s) + "</span>").join("")
     : '<span class="chip">' + esc(nb.checking ? "Checking…" : (nb.error ? "Unavailable: " + nb.error : "Unavailable")) + "</span>";
+  const m = conn.models || {}, msel = $("model");
+  if ((m.options || []).length && !msel.options.length)
+    msel.innerHTML = m.options.map(o => '<option value="' + esc(o.id) + '"' + (o.id === m.default ? " selected" : "") + ">" + esc(o.label) + "</option>").join("");
+  msel.disabled = target === "offline";
+  msel.title = target === "offline" ? "Offline rehearsal uses no model" : "Model for every agent in this run";
+  const noModel = msel.value === "none";
   const online = nodes.filter(n => n.status === "online").length;
   $("targetNote").textContent = target === "offline"
     ? "Runs in this process with deterministic answers. No network, no models."
     : !f.ok ? "Sign in first: uv run flwr login supergrid"
     : !nodes.length ? "This federation has no national nodes. Pick the one they joined."
     : online < 3 ? online + " of 3 nodes online. Countries that are offline won't answer."
+    : noModel ? "3 of 3 nodes online. No model: every answer is deterministic."
     : "3 of 3 nodes online. Each live run uses model calls.";
   if (!running && data.source !== "file") drawNodes(stateAt(idx));
 }
@@ -693,7 +702,7 @@ function setState(state, msg){
 function setMode(){
   const chip = $("modeChip");
   if (data.source === "file"){ chip.className = "chip warn"; chip.textContent = "Replay of run " + (data.run_id || "unknown") + ", not live"; }
-  else if (data.source === "live"){ chip.className = "chip " + (data.target === "offline" ? "warn" : "ok"); chip.textContent = data.target === "offline" ? "Offline rehearsal · deterministic" : "Live run" + (data.run_id ? " #" + data.run_id : "") + " · SuperGrid"; }
+  else if (data.source === "live"){ chip.className = "chip " + (data.target === "offline" ? "warn" : "ok"); chip.textContent = data.target === "offline" ? "Offline rehearsal · deterministic" : "Live run" + (data.run_id ? " #" + data.run_id : "") + " · SuperGrid" + (data.modelLabel ? " · " + data.modelLabel : ""); }
   else { chip.className = "chip"; chip.textContent = "Idle"; }
 }
 async function startRun(){
@@ -703,6 +712,8 @@ async function startRun(){
   if (target === "supergrid" && !(conn.flower && conn.flower.ok)){ $("runErr").textContent = "Flower isn’t connected. Run uv run flwr login supergrid, or switch to Offline rehearsal."; $("runErr").hidden = false; return; }
   reset("live");
   data.prompt = prompt; data.target = target;
+  const msel = $("model"), model = target === "offline" ? "" : msel.value;
+  data.modelLabel = model && msel.selectedOptions[0] ? msel.selectedOptions[0].textContent : "";
   const nodes = fedNodes().map(n => n.country).sort();
   if (target === "supergrid" && nodes.length) setCountries(nodes); else layout();
   render(0);
@@ -716,7 +727,7 @@ async function startRun(){
   }, 250);
   let res;
   try {
-    res = await fetch("/api/runs", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({prompt, target, federation:$("federation").value || ""})});
+    res = await fetch("/api/runs", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({prompt, target, federation:$("federation").value || "", model})});
   } catch { return runEnded("failed", "The console server is not responding."); }
   const body = await res.json().catch(() => ({}));
   if (!res.ok) return runEnded("failed", body.error || "Couldn’t start the run.");
@@ -764,6 +775,7 @@ function setTarget(t){
 $("t-supergrid").onclick = () => setTarget("supergrid");
 $("t-offline").onclick = () => setTarget("offline");
 $("federation").onchange = () => drawStatus();
+$("model").onchange = () => drawStatus();
 
 /* ---------- chat transcript (small, safe Markdown) ---------- */
 let chatQueued = false;

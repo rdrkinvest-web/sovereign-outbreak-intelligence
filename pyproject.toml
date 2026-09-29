@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sovereign-outbreak-intelligence"
-version = "0.1.0"
+version = "0.1.1"
 description = "Ministry-of-Health agents investigate a synthetic cross-border outbreak together; queries move, sovereign data does not."
 license = { file = "LICENSE" }
 requires-python = ">=3.11,<4.0"
@@ -30,7 +30,7 @@ fab-include = ["agent/**/*.py", "LICENSE"]
 agentapp = "agent.agent_app:app"
 
 [tool.flwr.app.config]
-model = "openai/gpt-5.6-sol"  # one model for every agent (Spec §11)
+model = "openai/gpt-5.6-sol"  # one model for every agent (Spec §11); "flwrlabs/endeavor-1.0" also works but its preview was flaky
 node-agents = true             # false: nodes answer deterministically (fallback Level C)
 ai-follow-up = true            # false: the coordinator's fixed rule picks round 3
 llm-brief = true
