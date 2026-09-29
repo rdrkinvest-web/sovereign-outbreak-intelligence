@@ -8,10 +8,21 @@ SuperNode keys are the same, so the nodes keep their identities).
 **Cost:** AMD Epyc Genoa CPU is $0.015/vCPU-h + $0.0045/GiB-h. A 2 vCPU / 8 GiB VM
 is ~$0.07/h, so three VMs for 12 h is ~$2.50 plus a few cents of disk.
 
-## 1. Create the three VMs (Nebius web console)
+## 1. Create the three VMs
 
-Console labels may differ slightly. For each of `moh-kenya`, `moh-uganda`,
-`moh-tanzania`:
+**With the CLI (what we used):** install the audited Nebius CLI to `~/.nebius/bin`,
+log in with `~/.nebius/bin/nebius profile create`, then:
+
+```
+scripts/nebius_vms.sh create        # dry run
+scripts/nebius_vms.sh create --go   # uk-south1 (London), cpu-d3 2 vCPU / 8 GiB each
+scripts/nebius_vms.sh status        # state and public IPs
+```
+
+The region is uk-south1 because this account's CPU quota was 0 in eu-north1.
+
+**Or in the web console** (labels may differ slightly), for each of `moh-kenya`,
+`moh-uganda`, `moh-tanzania`:
 
 1. **Compute → Virtual machines → Create virtual machine.**
 2. **Name:** `moh-kenya` (etc.).
@@ -46,9 +57,9 @@ run one warm-up investigation before timing or demoing.
 
 ## 3. Teardown (do this after the event)
 
-1. Console: **delete all three VMs**, and their **boot disks** and **public IPs**
-   if the console does not delete them with the VM. Check **Billing** shows no
-   running compute.
+1. `scripts/nebius_vms.sh delete --go` (or delete them in the console), then check
+   no `moh-*` disks or public IPs remain and **Billing** shows no running compute.
+   Remove the CLI and its stored login with `rm -rf ~/.nebius`.
 2. Laptop fallback, if you still need the nodes: `docker compose start`.
 3. Revoke or rotate the Flower API key that was copied to the VMs
    (flower.ai → Profile → Settings → API Keys).
