@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sovereign-outbreak-intelligence"
-version = "0.1.1"
+version = "0.1.2"
 description = "Ministry-of-Health agents investigate a synthetic cross-border outbreak together; queries move, sovereign data does not."
 license = { file = "LICENSE" }
 requires-python = ">=3.11,<4.0"
