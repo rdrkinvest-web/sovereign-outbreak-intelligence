@@ -1,0 +1,30 @@
+#cloud-config
+# Paste as "User data" when creating each Nebius VM.
+# Creates the `moh` login (key-based SSH only), installs Docker, and closes
+# every inbound port except SSH. SuperNodes only dial OUT to
+# fleet-supergrid.flower.ai:443, so nothing else needs to be open.
+groups:
+  - docker
+users:
+  - name: moh
+    groups: [sudo, docker]
+    shell: /bin/bash
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAe1hJTZqhkn0km5G2PACyk/l+UtyBWReImFwxnFUISI nebius-moh-hackathon
+ssh_pwauth: false
+package_update: true
+packages:
+  - docker.io
+  - docker-compose-v2
+  - ufw
+runcmd:
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow 22/tcp
+  - ufw --force enable
+  - systemctl enable --now docker
+  - usermod -aG docker moh
+  - docker pull flwr/supernode:1.39.0
+  - touch /var/lib/cloud/moh-ready

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sovereign Outbreak Intelligence</title>
+<style>
+  :root {
+    --bg: #FAF9F5; --surface: #FFFFFF; --text: #1F1E1C; --muted: #5F5E5A; --hint: #888780;
+    --border: #D3D1C7; --line: #888780; --wall: #E24B4A;
+    --p-fill: #EEEDFE; --p-stroke: #534AB7; --p-title: #3C3489; --p-sub: #534AB7;
+    --c-fill: #FAECE7; --c-stroke: #993C1D; --c-title: #712B13; --c-sub: #993C1D;
+    --g-fill: #F1EFE8; --g-stroke: #888780; --g-title: #2C2C2A; --g-sub: #5F5E5A;
+    --accent: #534AB7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1B1B19; --surface: #252523; --text: #F1EFE8; --muted: #B4B2A9; --hint: #888780;
+      --border: #444441; --line: #B4B2A9; --wall: #F09595;
+      --p-fill: #3C3489; --p-stroke: #AFA9EC; --p-title: #EEEDFE; --p-sub: #CECBF6;
+      --c-fill: #712B13; --c-stroke: #F0997B; --c-title: #FAECE7; --c-sub: #F5C4B3;
+      --g-fill: #2C2C2A; --g-stroke: #888780; --g-title: #F1EFE8; --g-sub: #B4B2A9;
+      --accent: #AFA9EC;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1B1B19; --surface: #252523; --text: #F1EFE8; --muted: #B4B2A9; --hint: #888780;
+    --border: #444441; --line: #B4B2A9; --wall: #F09595;
+    --p-fill: #3C3489; --p-stroke: #AFA9EC; --p-title: #EEEDFE; --p-sub: #CECBF6;
+    --c-fill: #712B13; --c-stroke: #F0997B; --c-title: #FAECE7; --c-sub: #F5C4B3;
+    --g-fill: #2C2C2A; --g-stroke: #888780; --g-title: #F1EFE8; --g-sub: #B4B2A9;
+    --accent: #AFA9EC;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 17px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 48px 16px 72px; }
+  header { margin-bottom: 40px; }
+  .eyebrow { font-size: 13px; color: var(--muted); letter-spacing: .02em; margin: 0 0 8px; }
+  h1 { font-size: 34px; line-height: 1.2; font-weight: 600; margin: 0 0 8px; }
+  .thesis { font-size: 22px; color: var(--accent); margin: 0 0 16px; font-weight: 500; }
+  h2 { font-size: 22px; font-weight: 600; margin: 48px 0 12px; }
+  p { margin: 0 0 14px; }
+  .muted { color: var(--muted); }
+  figure { margin: 20px 0 16px; background: var(--surface); border: 1px solid var(--border);
+           border-radius: 12px; padding: 16px; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption { font-size: 14px; color: var(--muted); margin-top: 8px; }
+  ol.layers { padding-left: 22px; margin: 0 0 14px; }
+  ol.layers li { margin-bottom: 10px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 15px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-weight: 600; color: var(--muted); font-size: 13px; }
+  .table-wrap { overflow-x: auto; }
+  .pitch { border-left: 3px solid var(--accent); padding: 4px 0 4px 18px; font-size: 20px; margin: 24px 0; }
+  .note { font-size: 14px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 16px; margin-top: 48px; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .88em; }
+  svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .t { font-size: 14px; font-weight: 600; }
+  .s { font-size: 12px; }
+  .n-p rect { fill: var(--p-fill); stroke: var(--p-stroke); }
+  .n-p .t { fill: var(--p-title); } .n-p .s { fill: var(--p-sub); }
+  .n-c rect { fill: var(--c-fill); stroke: var(--c-stroke); }
+  .n-c .t { fill: var(--c-title); } .n-c .s { fill: var(--c-sub); }
+  .n-g rect { fill: var(--g-fill); stroke: var(--g-stroke); }
+  .n-g .t { fill: var(--g-title); } .n-g .s { fill: var(--g-sub); }
+  .lbl { fill: var(--muted); }
+  .arr { stroke: var(--line); stroke-width: 1.5; fill: none; }
+  .head { stroke: var(--line); }
+  .zone { fill: none; stroke: var(--border); stroke-width: 1; stroke-dasharray: 4 4; }
+  .wall { stroke: var(--wall); stroke-width: 1.5; stroke-dasharray: 6 4; }
+  @media (max-width: 560px) { h1 { font-size: 28px; } .thesis { font-size: 19px; } figure { padding: 8px; } }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <p class="eyebrow">Flower Collaborative Agent Hackathon · Stanford 2026 · synthetic demonstration data</p>
+  <h1>Sovereign Outbreak Intelligence</h1>
+  <p class="thesis">Queries move. Sovereign data does not.</p>
+  <p>A federation of Ministry-of-Health agents investigates a possible cross-border outbreak together,
+     while each country's patient-level data stays inside its own sovereign node. Built on Flower Agents:
+     the coordinator runs on SuperGrid, and each country is a SuperNode in the federation
+     <code>@pbggo/east-africa-moh</code>.</p>
+</header>
+
+<section>
+  <h2>Who sits where</h2>
+  <figure>
+    <svg viewBox="0 0 680 500" role="img" aria-labelledby="d1t d1d">
+      <title id="d1t">Coordinator and sovereign nodes</title>
+      <desc id="d1d">A coordinator agent on SuperGrid exchanges messages with three national node agents. Inside each node, the agent reaches the dataset only through aggregate tools; a privacy wall sits between the agent and the tools.</desc>
+      <defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="head" d="M2 1L8 5L2 9" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+      <g class="n-p"><rect x="190" y="30" width="300" height="56" rx="8" stroke-width="0.75"/><text class="t" x="340" y="48" text-anchor="middle" dominant-baseline="central">Coordinator agent</text><text class="s" x="340" y="68" text-anchor="middle" dominant-baseline="central">SuperGrid · sees aggregates only</text></g>
+      <path class="arr" d="M340 86 L340 110 L130 110 L130 154" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <path class="arr" d="M340 86 L340 154" marker-end="url(#arrow)"/>
+      <path class="arr" d="M340 86 L340 110 L550 110 L550 154" marker-end="url(#arrow)"/>
+      <rect class="zone" x="40" y="140" width="180" height="300" rx="8"/>
+      <rect class="zone" x="250" y="140" width="180" height="300" rx="8"/>
+      <rect class="zone" x="460" y="140" width="180" height="300" rx="8"/>
+      <g class="n-p"><rect x="52" y="156" width="156" height="56" rx="8" stroke-width="0.75"/><text class="t" x="130" y="174" text-anchor="middle" dominant-baseline="central">Kenya agent</text><text class="s" x="130" y="194" text-anchor="middle" dominant-baseline="central">Chooses analyses</text></g>
+      <g class="n-p"><rect x="262" y="156" width="156" height="56" rx="8" stroke-width="0.75"/><text class="t" x="340" y="174" text-anchor="middle" dominant-baseline="central">Uganda agent</text><text class="s" x="340" y="194" text-anchor="middle" dominant-baseline="central">Chooses analyses</text></g>
+      <g class="n-p"><rect x="472" y="156" width="156" height="56" rx="8" stroke-width="0.75"/><text class="t" x="550" y="174" text-anchor="middle" dominant-baseline="central">Tanzania agent</text><text class="s" x="550" y="194" text-anchor="middle" dominant-baseline="central">Chooses analyses</text></g>
+      <line class="arr" x1="130" y1="212" x2="130" y2="256" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <line class="arr" x1="340" y1="212" x2="340" y2="256" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <line class="arr" x1="550" y1="212" x2="550" y2="256" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <line class="wall" x1="44" y1="234" x2="216" y2="234"/>
+      <line class="wall" x1="254" y1="234" x2="426" y2="234"/>
+      <line class="wall" x1="464" y1="234" x2="636" y2="234"/>
+      <g class="n-g"><rect x="52" y="258" width="156" height="56" rx="8" stroke-width="0.75"/><text class="t" x="130" y="276" text-anchor="middle" dominant-baseline="central">Aggregate tools</text><text class="s" x="130" y="296" text-anchor="middle" dominant-baseline="central">Policy + audit</text></g>
+      <g class="n-g"><rect x="262" y="258" width="156" height="56" rx="8" stroke-width="0.75"/><text class="t" x="340" y="276" text-anchor="middle" dominant-baseline="central">Aggregate tools</text><text class="s" x="340" y="296" text-anchor="middle" dominant-baseline="central">Policy + audit</text></g>
+      <g class="n-g"><rect x="472" y="258" width="156" height="56" rx="8" stroke-width="0.75"/><text class="t" x="550" y="276" text-anchor="middle" dominant-baseline="central">Aggregate tools</text><text class="s" x="550" y="296" text-anchor="middle" dominant-baseline="central">Policy + audit</text></g>
+      <line class="arr" x1="130" y1="348" x2="130" y2="316" marker-end="url(#arrow)"/>
+      <line class="arr" x1="340" y1="348" x2="340" y2="316" marker-end="url(#arrow)"/>
+      <line class="arr" x1="550" y1="348" x2="550" y2="316" marker-end="url(#arrow)"/>
+      <g class="n-c"><rect x="52" y="350" width="156" height="56" rx="8" stroke-width="0.75"/><text class="t" x="130" y="368" text-anchor="middle" dominant-baseline="central">kenya.csv</text><text class="s" x="130" y="388" text-anchor="middle" dominant-baseline="central">Raw rows stay here</text></g>
+      <g class="n-c"><rect x="262" y="350" width="156" height="56" rx="8" stroke-width="0.75"/><text class="t" x="340" y="368" text-anchor="middle" dominant-baseline="central">uganda.csv</text><text class="s" x="340" y="388" text-anchor="middle" dominant-baseline="central">Raw rows stay here</text></g>
+      <g class="n-c"><rect x="472" y="350" width="156" height="56" rx="8" stroke-width="0.75"/><text class="t" x="550" y="368" text-anchor="middle" dominant-baseline="central">tanzania.csv</text><text class="s" x="550" y="388" text-anchor="middle" dominant-baseline="central">Raw rows stay here</text></g>
+      <text class="s lbl" x="130" y="424" text-anchor="middle" dominant-baseline="central">Kenya · sovereign node</text>
+      <text class="s lbl" x="340" y="424" text-anchor="middle" dominant-baseline="central">Uganda · sovereign node</text>
+      <text class="s lbl" x="550" y="424" text-anchor="middle" dominant-baseline="central">Tanzania · sovereign node</text>
+      <line class="wall" x1="186" y1="470" x2="226" y2="470"/>
+      <text class="s lbl" x="236" y="470" dominant-baseline="central">Privacy wall: only aggregates cross upward</text>
+    </svg>
+    <figcaption>Each dashed box is one country's own machine (a Flower SuperNode). Purple = AI agents, grey = code-controlled tools, coral = raw national data.</figcaption>
+  </figure>
+  <p>Each country's dataset is read only by its <strong>aggregate tools</strong>: deterministic functions that
+     compute counts, rates, means and dates, apply that country's sharing policy, and audit their own output.
+     The country's <strong>AI agent</strong> sits above the red wall. It decides which analyses to run and interprets
+     the results, but it can only call those tools and read their aggregate results, never the rows. The
+     <strong>coordinator</strong> sits one level further out on Flower's SuperGrid and only ever sees what the
+     country agents send back.</p>
+</section>
+
+<section>
+  <h2>One investigation, three rounds</h2>
+  <figure>
+    <svg viewBox="0 0 680 400" role="img" aria-labelledby="d2t d2d">
+      <title id="d2t">Investigation rounds</title>
+      <desc id="d2d">Round 1 sends the same scan to all three countries and gets three aggregate replies; round 2 is a local comparison with no messages; round 3 is one AI-chosen follow-up to Kenya and Uganda; the result is a human-review recommendation with 10 messages, 5 aggregate answers and zero raw rows.</desc>
+      <defs><marker id="arrow2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="head" d="M2 1L8 5L2 9" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+      <g class="n-p"><rect x="150" y="30" width="380" height="56" rx="8" stroke-width="0.75"/><text class="t" x="340" y="48" text-anchor="middle" dominant-baseline="central">Round 1 · syndrome scan</text><text class="s" x="340" y="68" text-anchor="middle" dominant-baseline="central">Same question to all 3 · 3 aggregate replies</text></g>
+      <line class="arr" x1="340" y1="86" x2="340" y2="118" marker-end="url(#arrow2)"/>
+      <g class="n-g"><rect x="150" y="120" width="380" height="56" rx="8" stroke-width="0.75"/><text class="t" x="340" y="138" text-anchor="middle" dominant-baseline="central">Round 2 · compare</text><text class="s" x="340" y="158" text-anchor="middle" dominant-baseline="central">Coordinator only · no messages sent</text></g>
+      <line class="arr" x1="340" y1="176" x2="340" y2="208" marker-end="url(#arrow2)"/>
+      <g class="n-p"><rect x="150" y="210" width="380" height="56" rx="8" stroke-width="0.75"/><text class="t" x="340" y="228" text-anchor="middle" dominant-baseline="central">Round 3 · one follow-up</text><text class="s" x="340" y="248" text-anchor="middle" dominant-baseline="central">AI picks question · asks Kenya and Uganda</text></g>
+      <line class="arr" x1="340" y1="266" x2="340" y2="298" marker-end="url(#arrow2)"/>
+      <g class="n-g"><rect x="150" y="300" width="380" height="56" rx="8" stroke-width="0.75"/><text class="t" x="340" y="318" text-anchor="middle" dominant-baseline="central">Result · human review</text><text class="s" x="340" y="338" text-anchor="middle" dominant-baseline="central">10 messages · 5 aggregate answers · 0 rows</text></g>
+    </svg>
+    <figcaption>Purple steps send messages across the federation; grey steps happen inside the coordinator.</figcaption>
+  </figure>
+  <p><strong>Round 1.</strong> The coordinator asks every country the same question: is there unusual febrile illness
+     in your border regions over the last 14 days compared with the previous 60? Each country's agent runs its local
+     analyses and replies with aggregates plus a short interpretation. In the synthetic data, Kenya and Uganda each
+     find fever up, platelets down and ALT up, with malaria unchanged. Tanzania stays near baseline.</p>
+  <p><strong>Round 2.</strong> The coordinator compares the answers itself and finds the pattern shared by Kenya and Uganda.
+     No messages are sent.</p>
+  <p><strong>Round 3.</strong> The coordinator's AI picks one follow-up from a fixed menu (for example, “is the platelet
+     drop concentrated among febrile patients?”), words it, explains why, and sends it only to Kenya and Uganda.</p>
+  <p><strong>Result.</strong> A structured assessment for a human epidemiologist: supporting and contradictory evidence,
+     uncertainties, and a recommended next step. It never declares an outbreak. It ends with a measured count:
+     <strong>raw patient rows transferred: 0</strong>.</p>
+</section>
+
+<section>
+  <h2>How the privacy wall holds</h2>
+  <p>The agents reason freely, but privacy doesn't rely on them behaving. It's enforced by what they can reach
+     and by code that checks everything before it leaves a country.</p>
+  <ol class="layers">
+    <li><strong>The function list is the boundary.</strong> A country's AI can only call aggregate analysis tools.
+        It has no file access and no ability to send messages itself. Adding a tool is a privacy decision.</li>
+    <li><strong>Code, not the AI, decides what crosses the border.</strong> The AI only proposes an answer. Code checks
+        that every number it cites really came from a tool, that its yes/no matches what was computed, and that nothing
+        row-shaped is in the reply. Only then does code send it; otherwise the country answers deterministically instead.</li>
+    <li><strong>Raw-data requests never reach the AI.</strong> “Give me the raw patient records” is refused by plain code,
+        with a fixed refusal, before any model is involved.</li>
+    <li><strong>Even aggregates follow each country's rules.</strong> Small groups are suppressed and precision is limited,
+        so a statistic can't point at an individual.</li>
+  </ol>
+</section>
+
+<section>
+  <h2>Each country's own rules</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Country</th><th>Sharing policy (enforced in code)</th></tr></thead>
+    <tbody>
+      <tr><td>Kenya</td><td>Suppresses statistics from fewer than 10 records.</td></tr>
+      <tr><td>Uganda</td><td>Suppresses statistics from fewer than 20 records; shares the start of a signal by week only, never an exact date.</td></tr>
+      <tr><td>Tanzania</td><td>Suppresses statistics from fewer than 10 records; declines border-versus-interior breakdowns.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>What crosses the border</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Information</th><th>Where it goes</th></tr></thead>
+    <tbody>
+      <tr><td>Patient-level rows</td><td><strong>Nowhere.</strong> They stay on the country's own node.</td></tr>
+      <tr><td>Aggregates (rates, means, counts, dates)</td><td>To the coordinator, and to the AI model provider when a country's agent reasons about them.</td></tr>
+      <tr><td>Questions and interpretations</td><td>Between the coordinator and the country agents, and to the AI model provider.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="muted">Flower lets each node use its own model endpoint. A country that wants even its aggregates to stay home
+     can point its agent at a model running on its own infrastructure, with no other change to the design.</p>
+</section>
+
+<p class="pitch">The agents reason freely, but they can only touch data through audited aggregate functions,
+   and code, not the AI, decides what crosses the border.</p>
+
+<p class="note">Synthetic demonstration data only. Anomaly strengths and confidence are demonstration scores,
+   not validated epidemiological probabilities. This is a proof of architecture, not a public-health system.</p>
+
+</main>
+</body>
+</html>

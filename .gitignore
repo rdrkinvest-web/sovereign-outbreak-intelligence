@@ -1,0 +1,8 @@
+.venv/
+*.fab
+__pycache__/
+.pytest_cache/
+.env
+!README.md
+keys/
+.DS_Store

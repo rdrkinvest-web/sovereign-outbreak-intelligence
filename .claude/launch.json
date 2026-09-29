@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "outbreak-console",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "python", "ui/server.py", "--port", "8765"],
+      "port": 8765
+    }
+  ]
+}

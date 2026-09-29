@@ -1,0 +1,19 @@
+# One national SuperNode on its own machine (deployed to each Nebius VM as compose.yaml).
+# The VM holds only: this file, .env (FLWR_MODEL_API_KEY), keys/node (its private key)
+# and data/<country>.csv (its own dataset). Nothing from any other country.
+
+services:
+  node:
+    image: flwr/supernode:1.39.0
+    restart: unless-stopped
+    command:
+      - --superlink=fleet-supergrid.flower.ai:443
+      - --auth-supernode-private-key=/keys/node
+      - --allow-runtime-dependency-installation
+    environment:
+      # The node's AI agent calls the model through Flower with this key.
+      FLWR_MODEL_API_KEY: ${FLWR_MODEL_API_KEY:?Set FLWR_MODEL_API_KEY in .env}
+      FLWR_FILESYSTEM_ALLOWED_DIRS: /data/national
+    volumes:
+      - ./keys/node:/keys/node:ro
+      - ./data:/data/national:ro

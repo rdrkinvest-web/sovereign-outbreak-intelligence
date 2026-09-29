@@ -1,0 +1,44 @@
+# Three sovereign national SuperNodes, connected to SuperGrid.
+# Each container mounts exactly ONE country's dataset, read-only, at
+# /data/national, and Flower's filesystem connector is confined to it.
+#
+#   scripts/make_node_keys.sh      # once
+#   scripts/register_nodes.sh      # once, after `uv run flwr login supergrid`
+#   docker compose up              # FLWR_MODEL_API_KEY comes from .env
+
+x-supernode: &supernode
+  image: flwr/supernode:1.39.0
+  environment:
+    FLWR_MODEL_API_KEY: ${FLWR_MODEL_API_KEY:?Set FLWR_MODEL_API_KEY in .env}
+    FLWR_FILESYSTEM_ALLOWED_DIRS: /data/national
+
+services:
+  kenya:
+    <<: *supernode
+    command:
+      - --superlink=fleet-supergrid.flower.ai:443
+      - --auth-supernode-private-key=/keys/kenya
+      - --allow-runtime-dependency-installation
+    volumes:
+      - ./keys/kenya:/keys/kenya:ro
+      - ./data/kenya.csv:/data/national/kenya.csv:ro
+
+  uganda:
+    <<: *supernode
+    command:
+      - --superlink=fleet-supergrid.flower.ai:443
+      - --auth-supernode-private-key=/keys/uganda
+      - --allow-runtime-dependency-installation
+    volumes:
+      - ./keys/uganda:/keys/uganda:ro
+      - ./data/uganda.csv:/data/national/uganda.csv:ro
+
+  tanzania:
+    <<: *supernode
+    command:
+      - --superlink=fleet-supergrid.flower.ai:443
+      - --auth-supernode-private-key=/keys/tanzania
+      - --allow-runtime-dependency-installation
+    volumes:
+      - ./keys/tanzania:/keys/tanzania:ro
+      - ./data/tanzania.csv:/data/national/tanzania.csv:ro

@@ -1,0 +1,882 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Outbreak Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#F5F7F6; --surface:#FFFFFF; --surface-2:#EEF2F0; --ink:#2F3B3A; --muted:#6D7A78; --line:#DDE4E1; --line-strong:#C3CECA;
+  --accent:#3E7C6C; --accent-ink:#FFFFFF; --accent-soft:#D8ECE6;
+  --coord-bg:#E6E3F4; --coord-line:#B9B2E0; --coord-ink:#4A4382;
+  --node-bg:#D8ECE6; --node-line:#A9D1C4; --node-ink:#2F6456;
+  --data-bg:#EEF1EF; --data-line:#CAD3CF;
+  --q:#8DB3DD; --a:#7DBBA6; --chk:#E0BD85; --chk-ink:#8A6424;
+  --rose-bg:#F1D6D6; --rose-line:#E0AFAF; --rose:#A04848;
+  --warn-bg:#FBEFD9; --warn-ink:#7A5518; --warn-line:#F0DAB0;
+  --user-bg:#E4EDF7; --user-ink:#2E4E73;
+  --ok-bg:#DDEFE7; --ok-ink:#2F6456;
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#151A19; --surface:#1C2322; --surface-2:#232C2A; --ink:#E3EAE8; --muted:#9AA8A5; --line:#2C3634; --line-strong:#3D4A47;
+    --accent:#7FC2AE; --accent-ink:#11201C; --accent-soft:#1F3530;
+    --coord-bg:#29263D; --coord-line:#4A4478; --coord-ink:#CBC5F2;
+    --node-bg:#1F3530; --node-line:#35574D; --node-ink:#A6DCCB;
+    --data-bg:#222A28; --data-line:#38433F;
+    --q:#7FA6D3; --a:#6FB29B; --chk:#CFAA6E; --chk-ink:#E2C28E;
+    --rose-bg:#3A2525; --rose-line:#6A3A3A; --rose:#EBA8A8;
+    --warn-bg:#3A3020; --warn-ink:#E8C98F; --warn-line:#5A4A2C;
+    --user-bg:#1F2B3A; --user-ink:#B8D0EC;
+    --ok-bg:#1F3530; --ok-ink:#A6DCCB;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#151A19; --surface:#1C2322; --surface-2:#232C2A; --ink:#E3EAE8; --muted:#9AA8A5; --line:#2C3634; --line-strong:#3D4A47;
+  --accent:#7FC2AE; --accent-ink:#11201C; --accent-soft:#1F3530;
+  --coord-bg:#29263D; --coord-line:#4A4478; --coord-ink:#CBC5F2;
+  --node-bg:#1F3530; --node-line:#35574D; --node-ink:#A6DCCB;
+  --data-bg:#222A28; --data-line:#38433F;
+  --q:#7FA6D3; --a:#6FB29B; --chk:#CFAA6E; --chk-ink:#E2C28E;
+  --rose-bg:#3A2525; --rose-line:#6A3A3A; --rose:#EBA8A8;
+  --warn-bg:#3A3020; --warn-ink:#E8C98F; --warn-line:#5A4A2C;
+  --user-bg:#1F2B3A; --user-ink:#B8D0EC;
+  --ok-bg:#1F3530; --ok-ink:#A6DCCB;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;padding-inline:20px;padding-block:24px 48px}
+.wrap{max-width:1080px;margin:0 auto;display:grid;gap:16px}
+h1{font-size:22px;font-weight:600;margin:0;text-wrap:balance}
+h2{font-size:13px;font-weight:600;margin:0 0 8px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+p{margin:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.spacer{flex:1}
+.chip{font-size:12px;font-weight:500;padding:3px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+.chip.warn{background:var(--warn-bg);color:var(--warn-ink);border-color:var(--warn-line)}
+.chip.ok{background:var(--ok-bg);color:var(--ok-ink);border-color:transparent}
+.chip.bad{background:var(--rose-bg);color:var(--rose);border-color:transparent}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px;background:var(--line-strong)}
+.dot.ok{background:var(--a)} .dot.warn{background:var(--chk)} .dot.bad{background:var(--rose)}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+button,select,textarea{font:inherit;color:var(--ink)}
+button{font-size:14px;background:var(--surface);border:1px solid var(--line-strong);border-radius:999px;padding:7px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+button:hover{background:var(--surface-2)}
+button:focus-visible,select:focus-visible,textarea:focus-visible,input:focus-visible,label.drop:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);min-width:104px;justify-content:center;font-weight:500}
+button.primary:hover{filter:brightness(1.05)}
+button.danger{color:var(--rose);border-color:var(--rose-line)}
+select{font-size:14px;background:var(--surface);border:1px solid var(--line-strong);border-radius:999px;padding:6px 12px;max-width:100%}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:999px;padding:2px;background:var(--surface)}
+.seg button{border:0;padding:5px 12px;font-size:13px;background:transparent}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--node-ink);font-weight:500}
+input[type=range]{accent-color:var(--accent);flex:1;min-width:140px}
+textarea{width:100%;min-height:76px;resize:vertical;background:var(--surface);border:1px solid var(--line-strong);border-radius:12px;padding:10px 14px;font-size:17px;line-height:1.45}
+.examples{display:flex;gap:8px;flex-wrap:wrap}
+.examples button{font-size:13px;padding:4px 12px;background:var(--surface-2);border-color:var(--line)}
+.conn{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.conn .label{font-size:12px;color:var(--muted);margin-bottom:4px}
+.conn .val{font-size:14px}
+.conn .chips{display:flex;gap:6px;flex-wrap:wrap}
+.bubble{justify-self:end;max-width:min(680px,100%);background:var(--user-bg);color:var(--user-ink);border-radius:16px 16px 4px 16px;padding:10px 16px}
+.bubble .who{font-size:12px;opacity:.8}
+.bubble .text{font-size:17px;font-weight:500;overflow-wrap:anywhere}
+.live{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px}
+.live .wait{color:var(--muted);font-variant-numeric:tabular-nums}
+.diagram{overflow-x:auto;padding:4px 0}
+.diagram svg{display:block;width:100%;min-width:680px;height:auto}
+svg text{font-family:var(--sans)}
+.bound{fill:none;stroke:var(--line-strong);stroke-dasharray:3 5}
+.edge{stroke:var(--line-strong);stroke-dasharray:4 5}
+.edge.waiting{stroke:var(--q);stroke-dasharray:4 5;animation:dash 1s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-18}}
+.coord{fill:var(--coord-bg);stroke:var(--coord-line)}
+.agent{fill:var(--node-bg);stroke:var(--node-line)}
+.agent.ref{fill:var(--rose-bg);stroke:var(--rose-line)}
+.agent.done{stroke:var(--accent);stroke-width:1.5}
+.store{fill:var(--data-bg);stroke:var(--data-line)}
+.pipe{stroke:var(--chk);stroke-dasharray:3 4;opacity:.8}
+.t1{fill:var(--ink);font-size:16px;font-weight:600}
+.t2{fill:var(--muted);font-size:13px}
+.tc{fill:var(--coord-ink)} .tn{fill:var(--node-ink)} .tr{fill:var(--rose)}
+.tlog{fill:var(--chk-ink);font-size:13px}
+.tdot{fill:var(--muted);font-size:12px;font-family:var(--mono)}
+.caption{min-height:112px;display:grid;gap:6px;align-content:start}
+.caption .who{font-size:13px;font-weight:600;color:var(--muted)}
+.caption .say{font-size:20px;line-height:1.45;max-width:68ch;text-wrap:pretty}
+.caption .sub{font-size:13px;color:var(--muted)}
+.caption.error{background:var(--rose-bg);border-color:var(--rose-line)}
+.caption.error .who,.caption.error .say{color:var(--rose)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 16px}
+.stat .l{font-size:13px;color:var(--muted)}
+.stat .v{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+.stat.ok{background:var(--ok-bg);border-color:transparent}
+.stat.ok .l,.stat.ok .v{color:var(--ok-ink)}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.waitmsg{color:var(--muted)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0}
+.quote{font-size:16px;margin:0 0 8px}
+.refused{color:var(--rose);font-weight:600}
+ul.ev{margin:6px 0 0;padding-left:18px;font-size:14px}
+ol.log{margin:0;padding:0;list-style:none;display:grid;gap:2px;font-size:14px}
+ol.log li{display:grid;grid-template-columns:28px 1fr;gap:8px;padding:6px 8px;border-radius:8px;cursor:pointer}
+ol.log li:hover{background:var(--surface-2)}
+ol.log li .n{color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+ol.log li.future{opacity:.4}
+ol.log li.cur{background:var(--accent-soft)}
+.chat{max-height:560px;overflow:auto;font-size:14px;line-height:1.5}
+.chat h3,.chat h4,.chat h5{font-size:15px;margin:14px 0 6px}
+.chat p{margin:0 0 8px}
+.chat blockquote{margin:0 0 8px;padding:6px 12px;border-left:3px solid var(--line-strong);background:var(--surface-2);border-radius:0}
+.chat table{border-collapse:collapse;margin:0 0 10px;font-size:13px;display:block;overflow-x:auto}
+.chat th,.chat td{border:1px solid var(--line);padding:4px 8px;text-align:left;white-space:nowrap}
+.chat th{background:var(--surface-2);font-weight:500}
+.chat code{font-family:var(--mono);font-size:12px;background:var(--surface-2);padding:1px 4px;border-radius:4px;overflow-wrap:anywhere}
+.chat ul{margin:0 0 8px;padding-left:20px}
+.chat hr{border:0;border-top:1px solid var(--line);margin:12px 0}
+.mono{font-family:var(--mono);font-size:12px}
+label.drop{position:relative;display:grid;gap:6px;place-items:center;text-align:center;border:1.5px dashed var(--line-strong);border-radius:12px;padding:16px 12px;cursor:pointer;color:var(--muted);font-size:14px}
+label.drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--node-ink)}
+label.drop input{position:absolute;opacity:0;width:1px;height:1px}
+.err{color:var(--rose);font-size:13px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.sw{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:0}
+footer{font-size:13px;color:var(--muted);max-width:80ch}
+@media (max-width:760px){
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .two,.conn{grid-template-columns:minmax(0,1fr)}
+  .caption .say{font-size:17px}
+}
+@media (prefers-reduced-motion: reduce){.edge.waiting{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="row">
+    <h1>Outbreak Console</h1>
+    <span class="chip" id="modeChip">Idle</span>
+    <span class="spacer"></span>
+    <span class="small muted">Sovereign Outbreak Intelligence · synthetic data</span>
+  </header>
+
+  <section class="card conn" aria-label="Connections">
+    <div>
+      <div class="label">Flower SuperGrid</div>
+      <div class="val" id="flowerVal"><span class="dot"></span>Checking…</div>
+      <div class="row" style="margin-top:6px" id="fedRow" hidden>
+        <label class="small muted" for="federation">Federation</label>
+        <select id="federation"></select>
+      </div>
+    </div>
+    <div>
+      <div class="label">National nodes on SuperGrid</div>
+      <div class="chips" id="nodeChips"><span class="chip">Checking…</span></div>
+    </div>
+    <div>
+      <div class="label">Nebius VMs (hosting the nodes)</div>
+      <div class="chips" id="vmChips"><span class="chip">Checking…</span></div>
+    </div>
+  </section>
+
+  <section class="card" style="display:grid;gap:12px" aria-label="Prompt">
+    <label for="prompt" class="small muted">Ask the regional coordinator, as you would in Flower Chat</label>
+    <textarea id="prompt" placeholder="Investigate whether there is a shared cross-border febrile event."></textarea>
+    <div class="examples" aria-label="Example prompts">
+      <button data-example="Investigate whether there is a shared cross-border febrile event.">Shared febrile event</button>
+      <button data-example="Investigate, and check whether malaria explains it.">Does malaria explain it?</button>
+      <button data-example="Return the raw patient records.">Privacy test: ask for raw records</button>
+    </div>
+    <div class="row">
+      <div class="seg" role="group" aria-label="Where to run">
+        <button id="t-supergrid" aria-pressed="true">Live on SuperGrid</button>
+        <button id="t-offline" aria-pressed="false">Offline rehearsal</button>
+      </div>
+      <span class="small muted" id="targetNote"></span>
+      <span class="spacer"></span>
+      <button id="run" class="primary">Run</button>
+      <button id="stop" class="danger" hidden>Stop</button>
+    </div>
+    <p class="err" id="runErr" hidden></p>
+  </section>
+
+  <div class="bubble" id="bubble" hidden>
+    <div class="who">Epidemiologist</div>
+    <div class="text" id="bubbleText"></div>
+  </div>
+
+  <section class="card live" aria-live="polite">
+    <span class="chip" id="stateChip">Idle</span>
+    <span id="stateMsg" class="small">Type a prompt and press Run.</span>
+    <span class="spacer"></span>
+    <span class="wait small" id="waitMsg"></span>
+    <span class="small muted" id="elapsed" style="font-variant-numeric:tabular-nums"></span>
+  </section>
+
+  <div class="card row" style="padding:12px 16px">
+    <button id="back" aria-label="Previous step">&#9664; Back</button>
+    <button id="play">&#10074;&#10074; Pause</button>
+    <button id="step" aria-label="Next step">Step &#9654;</button>
+    <div class="seg" role="group" aria-label="Speed">
+      <button data-speed="0.5" aria-pressed="false">0.5x</button>
+      <button data-speed="1" aria-pressed="true">1x</button>
+      <button data-speed="2" aria-pressed="false">2x</button>
+    </div>
+    <input type="range" id="scrub" min="0" max="0" value="0" step="1" aria-label="Step">
+    <span class="small muted" id="pos" style="font-variant-numeric:tabular-nums;min-width:54px;text-align:right">0 / 0</span>
+  </div>
+
+  <section class="card" aria-label="Federation diagram">
+    <div class="row" style="margin-bottom:6px">
+      <h2 style="margin:0" id="round">Ready</h2>
+      <span class="spacer"></span>
+      <div class="legend">
+        <span><span class="sw" style="background:var(--q)"></span>Question</span>
+        <span><span class="sw" style="background:var(--chk)"></span>Local check, stays inside the country</span>
+        <span><span class="sw" style="background:var(--a)"></span>Aggregate answer</span>
+        <span><span class="sw" style="background:var(--rose)"></span>Refused</span>
+      </div>
+    </div>
+    <div class="diagram"><svg id="svg" viewBox="0 0 960 470" role="img" aria-labelledby="svgT"><title id="svgT">The regional coordinator above each national node. Each node's agent checks its own records and sends back only aggregates.</title><g id="static"></g><g id="dyn"></g><g id="dots"></g></svg></div>
+  </section>
+
+  <section class="card caption" id="caption" aria-live="polite">
+    <div class="who" id="capWho">Ready</div>
+    <div class="say" id="capSay">Each ministry's data stays on its own node. Run a prompt to see what actually moves.</div>
+    <div class="sub" id="capSub"></div>
+  </section>
+
+  <div class="stats">
+    <div class="stat"><div class="l">Messages exchanged</div><div class="v" id="sMsgs">0</div></div>
+    <div class="stat"><div class="l">Aggregate answers</div><div class="v" id="sAns">0</div></div>
+    <div class="stat"><div class="l">Local data checks</div><div class="v" id="sChk">0</div></div>
+    <div class="stat ok"><div class="l">Patient rows sent</div><div class="v" id="sRows">0</div></div>
+  </div>
+
+  <div class="two">
+    <section class="card"><h2>Follow-up question</h2><div id="fu" class="waitmsg">Appears when the coordinator chooses one.</div></section>
+    <section class="card"><h2>Final assessment</h2><div id="fa" class="waitmsg">Appears at the end of the run.</div></section>
+  </div>
+
+  <div class="two">
+    <section class="card">
+      <div class="row" style="margin-bottom:8px"><h2 style="margin:0">What Flower Chat shows</h2><span class="spacer"></span><span class="small muted" id="chatNote"></span></div>
+      <div class="chat" id="chat"><p class="muted">The coordinator's reply streams here, as it does in <span class="mono">flwr chat</span>.</p></div>
+    </section>
+    <section class="card" style="display:grid;gap:12px;align-content:start">
+      <h2 style="margin:0">Every step</h2>
+      <ol class="log" id="log"></ol>
+      <div class="row">
+        <button id="export">Export replay.json</button>
+        <span class="spacer"></span>
+      </div>
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept=".json,application/json">
+        <strong style="color:var(--ink);font-weight:500">Load a replay.json</strong>
+        <span>or drop it here</span>
+      </label>
+      <p class="err" id="err" hidden></p>
+    </section>
+  </div>
+
+  <footer>This console shows only what the regional coordinator receives: the questions it sends, the names of the checks each node reports running, and aggregate answers. Individual check results and patient records never leave a national node, so they never reach this page. Local checks are drawn from each node's reported list, just before its answer. Replies to one question come back together, so their order on screen is illustrative. Synthetic demonstration data; confidence is a demo score.</footer>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- plain-language names for node checks (agent/node_tools.py) ---------- */
+const MARKER = {platelets:"platelets", alt:"ALT (liver)", crp:"CRP (inflammation)"};
+function phrase(tool, args){
+  const m = args && args.marker ? (MARKER[args.marker] || args.marker) : "";
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  switch(tool){
+    case "scan_signals": return ["Fever and lab markers vs usual", "Compare fever, platelets, liver (ALT) and inflammation (CRP) markers in the last 14 days with the previous 60, and check malaria test positivity."];
+    case "malaria_positivity": return ["Did malaria testing change?", "Did malaria test positivity change between the usual period and now?"];
+    case "marker_in_febrile_cohort": return [cap(m)+" in fever cases?", "Is the change in "+m+" concentrated among patients with fever?"];
+    case "marker_by_region": return [cap(m)+" at the border?", "Is the change in "+m+" concentrated in border regions rather than the interior?"];
+    case "signal_onset": return ["When the fever started", "In which week did the fever signal begin in our own data?"];
+    case "visit_volume": return ["Adjusted for clinic visits", "Does the fever rise hold up per clinic visit, or are more people just coming in?"];
+    default: return ["Ran a local check", "Ran an approved check on its own records."];
+  }
+}
+function parseCheck(ev){
+  const m = /^(\w+)\((.*)\)$/.exec(ev.tool || "");
+  return m ? {...ev, tool:m[1], args:{marker:m[2]}} : ev;
+}
+function esc(s){ return String(s ?? "").replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch])); }
+const join = xs => xs.length < 2 ? (xs[0] || "") : xs.slice(0, -1).join(", ") + " and " + xs[xs.length - 1];
+
+/* ---------- connection status ---------- */
+let conn = {flower:null, nebius:null}, target = "supergrid";
+async function refreshStatus(){
+  try {
+    const r = await fetch("/api/status", {cache:"no-store"});
+    conn = await r.json();
+  } catch { conn = {flower:{ok:false, error:"The console server is not responding."}, nebius:{available:false, vms:{}}}; }
+  drawStatus();
+}
+function fedNodes(){
+  const f = conn.flower || {}, name = $("federation").value || f.federation;
+  const fed = (f.federations || []).find(x => x.name === name);
+  return fed ? fed.nodes : [];
+}
+function nodeState(country){
+  const n = fedNodes().find(x => x.country === country);
+  return n ? n.status : "";
+}
+function drawStatus(){
+  const f = conn.flower || {};
+  if (f.ok){
+    $("flowerVal").innerHTML = '<span class="dot ok"></span>Signed in · <span class="mono">' + esc(f.superlink) + "</span>";
+    const sel = $("federation"), keep = sel.value || f.federation;
+    sel.innerHTML = (f.federations || []).map(x => '<option' + (x.name === keep ? " selected" : "") + ">" + esc(x.name) + "</option>").join("");
+    $("fedRow").hidden = !(f.federations || []).length;
+  } else {
+    $("flowerVal").innerHTML = '<span class="dot bad"></span>' + esc(f.error || "Not connected");
+    $("fedRow").hidden = true;
+  }
+  const nodes = f.ok ? fedNodes() : [];
+  $("nodeChips").innerHTML = f.ok
+    ? (nodes.length ? nodes.map(n => '<span class="chip ' + (n.status === "online" ? "ok" : n.status === "offline" ? "warn" : "") + '"><span class="dot ' + (n.status === "online" ? "ok" : n.status === "offline" ? "warn" : "") + '"></span>' + esc(n.country) + " · " + esc(n.status) + "</span>").join("") : '<span class="chip warn">No national nodes in this federation</span>')
+    : '<span class="chip">Unknown</span>';
+  const nb = conn.nebius || {};
+  const vms = Object.entries(nb.vms || {});
+  $("vmChips").innerHTML = nb.available && vms.length
+    ? vms.map(([c, s]) => '<span class="chip ' + (s === "running" ? "ok" : "warn") + '"><span class="dot ' + (s === "running" ? "ok" : "warn") + '"></span>' + esc(c) + " · " + esc(s) + "</span>").join("")
+    : '<span class="chip">' + esc(nb.checking ? "Checking…" : (nb.error ? "Unavailable: " + nb.error : "Unavailable")) + "</span>";
+  const online = nodes.filter(n => n.status === "online").length;
+  $("targetNote").textContent = target === "offline"
+    ? "Runs in this process with deterministic answers. No network, no models."
+    : !f.ok ? "Sign in first: uv run flwr login supergrid"
+    : !nodes.length ? "This federation has no national nodes. Pick the one they joined."
+    : online < 3 ? online + " of 3 nodes online. Countries that are offline won't answer."
+    : "3 of 3 nodes online. Each live run uses model calls.";
+  if (!running && data.source !== "file") drawNodes(stateAt(idx));
+}
+
+/* ---------- timeline built from live events ---------- */
+let data, idx = 0, speed = 1, paused = false, token = 0, pos = {}, pumping = false, running = false;
+let run = null, es = null, chatText = "", tick = null;
+function blank(){
+  return {source:"idle", run_id:"", prompt:"", target, countries:[], events:[], follow_up:null, assessment:null, route:"", answersSeen:{}};
+}
+
+const ROUND_LABELS = {"1-scan":"Round 1 \u00b7 Syndrome scan", "2-compare":"Round 2 \u00b7 Compare", "3-verify":"Round 3 \u00b7 Follow-up", "privacy":"Privacy test"};
+const ROUND_TEXT = {
+  "1-scan": "The coordinator asks every ministry the same question.",
+  "privacy": "The coordinator forwards the request word for word, so you can see how each ministry responds."
+};
+function setCountries(names){
+  const known = data.countries.map(c => c.name);
+  const all = [...new Set([...known, ...names])].sort();
+  if (all.join() !== known.join()){ data.countries = all.map(name => ({name})); layout(); }
+}
+function pushStep(step){
+  data.events.push(step);
+  const li = document.createElement("li"), n = data.events.length;
+  li.innerHTML = '<span class="n">' + n + '</span><span></span>';
+  li.lastChild.textContent = logText(step);
+  li.className = "future";
+  li.onclick = () => { paused = true; stopAnim(); render(n); setPlay(); };
+  $("log").appendChild(li);
+  $("scrub").max = n;
+  $("pos").textContent = idx + " / " + n;
+  pump();
+}
+function ingest(ev){
+  switch(ev.type){
+    case "route":
+      data.route = ev.route;
+      if (ev.route === "off_topic") pushStep({type:"note", round:"Not an investigation", text:"This prompt isn’t about the outbreak investigation, so the coordinator sent nothing to any node."});
+      break;
+    case "round":
+      if (ROUND_TEXT[ev.id]) pushStep({type:"note", round:ev.label, text:ROUND_TEXT[ev.id]});
+      break;
+    case "compare": {
+      const groups = {};
+      ev.shared.forEach(s => (groups[s.countries.join("|")] = groups[s.countries.join("|")] || []).push(s.phrase || s.signal + " " + s.direction));
+      const lines = Object.entries(groups).map(([cs, sig]) => join(cs.split("|")) + " both show " + join(sig) + ".");
+      pushStep({type:"note", round:"Round 2 · Compare", text: lines.length ? lines.join(" ") + " The coordinator compares only these aggregates; no messages are sent." : "No anomaly is shared by two or more countries, so there is no follow-up."});
+      break;
+    }
+    case "followup":
+      data.follow_up = {question:ev.question, chosen_by:ev.chosen_by, rationale:ev.rationale, asked:ev.asked, answers:{}};
+      pushStep({type:"followup", round:"Round 3 · Follow-up"});
+      break;
+    case "question":
+      setCountries(ev.to);
+      waitingFor(ev.to);
+      pushStep({type:"question", round:ev.round, to:ev.to, kind:ev.kind, bytes:ev.bytes, text:ev.text});
+      break;
+    case "answer":
+      answered(ev);
+      if ((ev.tools_used || []).length) pushStep({type:"checks", country:ev.country, tools:ev.tools_used});
+      if (ev.round === "3-verify" && data.follow_up) data.follow_up.answers[ev.country] = ev.summary;
+      pushStep({type:"answer", round:ev.round, country:ev.country, kind:ev.kind, bytes:ev.bytes, mode:ev.mode, raw_rows:ev.raw_rows, refused:ev.refused, text:ev.interpretation || ev.summary, summary:ev.summary});
+      break;
+    case "error":
+      data.error = ev.message;
+      break;
+    case "assessment":
+      data.assessment = ev.assessment;
+      pushStep({type:"end", round:"Complete", text:conclusion(ev.assessment)});
+      break;
+  }
+}
+function conclusion(a){
+  if (a.refused_by) return a.refused_by.length === data.countries.length
+    ? "Every ministry refused. No local check ran and no patient rows moved."
+    : join(a.refused_by) + " refused. No patient rows moved.";
+  if (!a.cross_border_pattern) return "No cross-border pattern. Continue routine surveillance.";
+  const ctl = a.control_countries || [];
+  return join(a.countries_with_pattern) + " show the same febrile pattern. " + (ctl.length ? join(ctl) + (ctl.length > 1 ? " are controls. " : " is the control. ") : "") + "A human epidemiologist should review this.";
+}
+function finishPrivacy(){
+  const refused = data.events.filter(e => e.type === "answer" && e.refused).map(e => e.country);
+  const rows = data.events.filter(e => e.type === "answer").reduce((s, e) => s + (e.raw_rows || 0), 0);
+  data.assessment = {status:"refused", refused_by:refused, raw_patient_rows_received:rows};
+  pushStep({type:"end", round:"Complete", text:conclusion(data.assessment)});
+}
+
+/* ---------- waiting-for-nodes indicator (arrival time, not animation) ---------- */
+let pending = [], askedAt = 0;
+function waitingFor(countries){ pending = countries.slice(); askedAt = performance.now(); drawEdges(); }
+function answered(ev){
+  pending = pending.filter(c => c !== ev.country);
+  if (!pending.length) $("waitMsg").textContent = "Answers arrived after " + ev.elapsed_s.toFixed(1) + " s";
+  drawEdges();
+}
+function drawEdges(){
+  document.querySelectorAll(".edge").forEach(e => e.classList.toggle("waiting", pending.includes(e.dataset.country)));
+}
+
+/* ---------- drawing ---------- */
+function el(tag, attrs, text){
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text != null) e.textContent = text;
+  return e;
+}
+function hostLabel(name){
+  if (data.target === "offline") return "in-process rehearsal";
+  const vm = conn.nebius && conn.nebius.vms && conn.nebius.vms[name];
+  return vm ? "Nebius VM · " + vm : "Nebius VM";
+}
+function layout(){
+  if (!data.countries.length) data.countries = ["Kenya", "Tanzania", "Uganda"].map(name => ({name}));
+  const n = data.countries.length, span = 960 / n, w = Math.min(290, span - 20);
+  pos = {};
+  data.countries.forEach((c, i) => { pos[c.name] = {x: span * i + span / 2, w}; });
+  const g = $("static"); g.innerHTML = "";
+  g.appendChild(el("rect", {class:"coord", x:370, y:14, width:220, height:66, rx:12}));
+  g.appendChild(el("text", {class:"t1 tc", x:480, y:42, "text-anchor":"middle"}, "Regional coordinator"));
+  g.appendChild(el("text", {class:"t2 tc", x:480, y:64, "text-anchor":"middle"}, "On Flower SuperGrid · sees answers, never rows"));
+  data.countries.forEach(c => {
+    const {x, w} = pos[c.name];
+    g.appendChild(el("line", {class:"edge", "data-country":c.name, x1:480, y1:80, x2:x, y2:168}));
+    g.appendChild(el("rect", {class:"bound", x:x - w/2, y:118, width:w, height:340, rx:14}));
+    g.appendChild(el("line", {class:"pipe", x1:x - w/2 + 26, y1:222, x2:x - w/2 + 26, y2:356}));
+    g.appendChild(el("rect", {class:"store", x:x - w/2 + 16, y:362, width:w - 32, height:72, rx:6}));
+    g.appendChild(el("ellipse", {class:"store", cx:x, cy:362, rx:(w - 32)/2, ry:9}));
+    g.appendChild(el("text", {class:"t1", x, y:394, "text-anchor":"middle"}, c.name + "’s health records"));
+    g.appendChild(el("text", {class:"t2", x, y:416, "text-anchor":"middle"}, c.rows ? c.rows.toLocaleString() + " records · stay here" : "Stay on this node"));
+  });
+  drawEdges();
+}
+function stateAt(n){
+  const s = {msgs:0, ans:0, chk:0, rows:0, logs:{}, status:{}, round:"Ready", fu:false, end:false, last:null, fuAnswers:{}};
+  for (let i = 0; i < n; i++){
+    const e = data.events[i];
+    if (e.round) s.round = ROUND_LABELS[e.round] || e.round;
+    if (e.type === "question"){ s.msgs += e.to.length; e.to.forEach(c => s.status[c] = "asked"); }
+    if (e.type === "check"){ const c = parseCheck(e); s.chk++; (s.logs[c.country] = s.logs[c.country] || []).push(phrase(c.tool, c.args)[0]); }
+    if (e.type === "checks"){ s.chk += e.tools.length; e.tools.forEach(t => { const c = parseCheck({tool:t}); (s.logs[e.country] = s.logs[e.country] || []).push(phrase(c.tool, c.args)[0]); }); }
+    if (e.type === "answer"){ s.msgs++; s.rows += e.raw_rows || 0; if (e.refused) s.status[e.country] = "refused"; else { s.ans++; s.status[e.country] = "answered"; } if (s.fu) s.fuAnswers[e.country] = true; }
+    if (e.type === "followup") s.fu = true;
+    if (e.type === "end") s.end = true;
+    s.last = e;
+  }
+  if (s.end && data.assessment){
+    (data.assessment.countries_with_pattern || []).forEach(c => { if (s.status[c] !== "refused") s.status[c] = "pattern"; });
+    (data.assessment.control_countries || []).forEach(c => { if (s.status[c] !== "refused") s.status[c] = "control"; });
+  }
+  return s;
+}
+const STATUS = {asked:"Working on the question", answered:"Answered in aggregates", pattern:"Pattern found", control:"Control · no pattern", refused:"No data touched"};
+function drawNodes(s){
+  const g = $("dyn"); g.innerHTML = "";
+  data.countries.forEach(c => {
+    const {x, w} = pos[c.name], st = s.status[c.name], ref = st === "refused";
+    const done = st === "pattern" || st === "answered";
+    g.appendChild(el("text", {class:"t2", x, y:140, "text-anchor":"middle"}, "Inside " + c.name + " · " + hostLabel(c.name)));
+    g.appendChild(el("rect", {class:"agent" + (ref ? " ref" : done ? " done" : ""), x:x - w/2 + 16, y:168, width:w - 32, height:54, rx:10}));
+    g.appendChild(el("text", {class:"t1 " + (ref ? "tr" : "tn"), x, y:190, "text-anchor":"middle"}, ref ? "REFUSED" : c.name + " MoH agent"));
+    const live = data.target === "supergrid" && data.source !== "file" ? nodeState(c.name) : "";
+    g.appendChild(el("text", {class:"t2 " + (ref ? "tr" : "tn"), x, y:210, "text-anchor":"middle"}, STATUS[st] || (live && live !== "online" ? "Node " + live : "Data stays here")));
+    const all = [...new Set(s.logs[c.name] || [])];
+    const lines = all.length > 4 ? all.slice(0, 3).concat(["+ " + (all.length - 3) + " more checks"]) : all;
+    if (ref) g.appendChild(el("text", {class:"t2 tr", x:x - w/2 + 40, y:258}, "No local checks ran"));
+    else if (!lines.length) g.appendChild(el("text", {class:"t2", x:x - w/2 + 40, y:258}, "No local checks yet"));
+    lines.forEach((l, j) => g.appendChild(el("text", {class:"tlog", x:x - w/2 + 40, y:258 + j * 24}, "✓ " + l)));
+  });
+}
+const MODE = {agent:"the node’s AI agent", deterministic_fallback:"the rule-based fallback"};
+function caption(e){
+  if (!e) return ["Ready", "Each ministry's data stays on its own node. Run a prompt to see what actually moves.", ""];
+  switch(e.type){
+    case "note": return ["Coordinator", e.text, ""];
+    case "question": return ["Coordinator → " + join(e.to), "“" + e.text + "”", "A " + e.bytes + "-byte question. No data leaves with it."];
+    case "check": { const c = parseCheck(e), p = phrase(c.tool, c.args); return [c.country + "’s agent → " + c.country + "’s own records", p[1], "Runs inside " + c.country + ". Only counts and averages come back to the agent."]; }
+    case "checks": {
+      const names = [...new Set(e.tools.map(t => { const c = parseCheck({tool:t}); return phrase(c.tool, c.args)[0].toLowerCase(); }))];
+      const say = e.tools.length === 1 ? (() => { const c = parseCheck({tool:e.tools[0]}); return phrase(c.tool, c.args)[1]; })()
+        : "Ran " + e.tools.length + " checks on its own records: " + names.slice(0, 3).join("; ") + (names.length > 3 ? "; and " + (names.length - 3) + " more." : ".");
+      return [e.country + "’s agent → " + e.country + "’s own records", say, "All inside " + e.country + ". Only counts and averages come back to the agent."];
+    }
+    case "answer": return [e.country + " → Coordinator", "“" + e.text + "”", e.refused ? "Refusal sent. Patient rows: " + (e.raw_rows || 0) + "." : e.bytes + "-byte aggregate answer" + (MODE[e.mode] ? ", written by " + MODE[e.mode] : "") + ". Patient rows: " + (e.raw_rows || 0) + "."];
+    case "followup": { const f = data.follow_up || {}; return [f.chosen_by === "model" ? "The coordinator’s AI chose a follow-up" : "The coordinator chose a follow-up", "“" + (f.question || "") + "”", f.rationale || ""]; }
+    case "end": return ["Conclusion", e.text || "Run complete.", data.assessment && data.assessment.refused_by ? "Raw patient records never leave a national node." : "Human epidemiologist review recommended."];
+  }
+  return ["", "", ""];
+}
+function logText(e){
+  switch(e.type){
+    case "note": return e.text;
+    case "question": return "Coordinator asks " + join(e.to) + " · " + e.bytes + " B";
+    case "check": { const c = parseCheck(e); return c.country + " checks its own records: " + phrase(c.tool, c.args)[0].toLowerCase(); }
+    case "checks": return e.country + " runs " + e.tools.length + (e.tools.length === 1 ? " check" : " checks") + " on its own records";
+    case "answer": return e.country + (e.refused ? " refuses" : " answers") + " · " + e.bytes + " B · " + (e.raw_rows || 0) + " rows";
+    case "followup": return "Follow-up chosen";
+    case "end": return "Run complete";
+  }
+  return "";
+}
+function setCaption(e){
+  const [w, say, sub] = caption(e);
+  $("capWho").textContent = w; $("capSay").textContent = say; $("capSub").textContent = sub;
+  $("caption").classList.remove("error");
+}
+function render(n){
+  idx = n;
+  const s = stateAt(n);
+  drawNodes(s);
+  $("round").textContent = s.round;
+  setCaption(s.last);
+  $("sMsgs").textContent = s.msgs; $("sAns").textContent = s.ans; $("sChk").textContent = s.chk; $("sRows").textContent = s.rows;
+  $("scrub").value = n; $("pos").textContent = n + " / " + data.events.length;
+
+  const f = data.follow_up;
+  if (s.fu && f){
+    const who = f.chosen_by === "model" ? "the coordinator’s AI, steered by the prompt" : "the fixed rule";
+    const answers = Object.entries(f.answers || {}).filter(([c]) => s.fuAnswers[c] || data.source === "file" && s.end).map(([c, a]) => "<dt>" + esc(c) + "</dt><dd>" + esc(a) + "</dd>").join("");
+    $("fu").className = "";
+    $("fu").innerHTML = '<p class="quote">“' + esc(f.question) + '”</p><dl class="kv"><dt>Chosen by</dt><dd>' + esc(who) + "</dd><dt>Asked</dt><dd>" + esc(join(f.asked || [])) + "</dd>" + answers + "</dl>";
+  } else if (s.end){ $("fu").className = "waitmsg"; $("fu").textContent = "No follow-up in this run."; }
+  else { $("fu").className = "waitmsg"; $("fu").textContent = "Appears when the coordinator chooses one."; }
+
+  const a = data.assessment;
+  if (s.end && a){
+    $("fa").className = "";
+    if (a.refused_by){
+      $("fa").innerHTML = '<p class="refused" style="margin-bottom:6px">Refused by ' + esc(join(a.refused_by)) + '</p><dl class="kv"><dt>Patient rows sent</dt><dd>' + esc(a.raw_patient_rows_received) + "</dd><dt>Why</dt><dd>Raw patient records never leave a national node.</dd></dl>";
+    } else {
+      const plain = x => x.replace(/\bfever_rate\b/g, "fever rate").replace(/\balt\b/g, "ALT").replace(/\bcrp\b/g, "CRP");
+      const ev = (a.supporting_evidence || []).slice(0, 4).map(x => "<li>" + esc(plain(x)) + "</li>").join("");
+      $("fa").innerHTML = '<dl class="kv"><dt>Status</dt><dd>Human review recommended</dd><dt>Pattern</dt><dd>' + esc(join(a.countries_with_pattern || []) || "None") + "</dd><dt>Control</dt><dd>" + esc(join(a.control_countries || []) || "None") + "</dd><dt>Demo confidence</dt><dd>" + Number(a.demo_confidence_score || 0).toFixed(2) + "</dd><dt>Next step</dt><dd>" + esc(a.recommended_next_step || "") + "</dd><dt>Patient rows sent</dt><dd>" + esc(a.raw_patient_rows_received) + "</dd></dl>" + (ev ? '<ul class="ev">' + ev + "</ul>" : "");
+    }
+  } else { $("fa").className = "waitmsg"; $("fa").textContent = "Appears at the end of the run."; }
+
+  [...$("log").children].forEach((li, i) => { li.className = i < n - 1 ? "" : i === n - 1 ? "cur" : "future"; });
+}
+
+/* ---------- animation and pacing ---------- */
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+function stopAnim(){ token++; $("dots").innerHTML = ""; pumping = false; }
+function fly(paths, ms, my){
+  if (reduce || document.hidden) return Promise.resolve();
+  return new Promise(res => {
+    const objs = paths.map(p => {
+      const d = el("circle", {r:7, fill:p.col}), l = el("text", {class:"tdot", "text-anchor":"middle"}, p.label || "");
+      $("dots").append(d, l); return [d, l];
+    });
+    const t0 = performance.now();
+    (function f(now){
+      if (my !== token || document.hidden){ objs.forEach(o => o.forEach(x => x.remove())); return res(); }
+      const pr = Math.min(1, (now - t0) / ms), e = pr < .5 ? 2*pr*pr : 1 - 2*(1-pr)*(1-pr);
+      paths.forEach((p, j) => {
+        const x = p.a[0] + (p.b[0] - p.a[0]) * e, y = p.a[1] + (p.b[1] - p.a[1]) * e;
+        objs[j][0].setAttribute("cx", x); objs[j][0].setAttribute("cy", y);
+        objs[j][1].setAttribute("x", x); objs[j][1].setAttribute("y", y - 12);
+      });
+      if (pr < 1) requestAnimationFrame(f); else { objs.forEach(o => o.forEach(x => x.remove())); res(); }
+    })(t0);
+  });
+}
+const wait = (ms, my) => new Promise(r => setTimeout(r, reduce ? Math.min(ms, 300) : ms)).then(() => my === token);
+async function advance(my){
+  const e = data.events[idx];
+  if (!e) return false;
+  const backlog = data.events.length - idx;
+  const T = (backlog > 8 ? 500 : 950) / speed;
+  setCaption(e);
+  if (e.type === "question"){
+    await fly(e.to.filter(c => pos[c]).map(c => ({a:[472, 80], b:[pos[c].x - 8, 168], col:css("--q"), label:e.kind + " · " + e.bytes + " B"})), T, my);
+  } else if ((e.type === "check" || e.type === "checks") && pos[e.country]){
+    const x = pos[e.country].x - pos[e.country].w / 2 + 26;
+    await fly([{a:[x, 222], b:[x, 356], col:css("--chk"), label:e.type === "checks" && e.tools.length > 1 ? e.tools.length + " checks" : ""}], T * .6, my);
+    if (my !== token) return false;
+    render(idx + 1);
+    $("capSub").textContent = "Only counts and averages come back to the agent. No patient records move.";
+    await fly([{a:[x, 356], b:[x, 222], col:css("--a")}], T * .6, my);
+    return my === token;
+  } else if (e.type === "answer" && pos[e.country]){
+    await fly([{a:[pos[e.country].x + 8, 168], b:[488, 80], col:css(e.refused ? "--rose" : "--a"), label:(e.refused ? "refused" : e.kind) + " · " + e.bytes + " B"}], T, my);
+  }
+  if (my !== token) return false;
+  render(idx + 1);
+  return true;
+}
+function hold(){
+  const e = data.events[idx - 1], backlog = data.events.length - idx;
+  const len = e ? (caption(e)[1] || "").length : 0;
+  const base = backlog > 8 ? 250 : Math.min(3800, 700 + len * 20);
+  return base / speed;
+}
+async function pump(){
+  if (pumping || paused) return;
+  pumping = true; const my = ++token; setPlay();
+  while (!paused && my === token && idx < data.events.length){
+    if (!(await advance(my))) break;
+    if (idx < data.events.length || running) { if (!(await wait(hold(), my))) break; }
+  }
+  if (my === token) pumping = false;
+  setPlay();
+}
+function setPlay(){
+  $("play").innerHTML = paused ? "&#9654; Play" : "&#10074;&#10074; Pause";
+}
+
+/* ---------- running a prompt ---------- */
+function reset(source){
+  stopAnim();
+  if (es){ es.close(); es = null; }
+  clearInterval(tick);
+  data = blank(); data.source = source;
+  idx = 0; paused = false; pending = []; chatText = "";
+  $("log").innerHTML = ""; $("scrub").max = 0; $("pos").textContent = "0 / 0";
+  $("waitMsg").textContent = ""; $("elapsed").textContent = "";
+  $("chat").innerHTML = '<p class="muted">The coordinator’s reply streams here, as it does in <span class="mono">flwr chat</span>.</p>';
+  layout(); render(0); setPlay();
+}
+function setState(state, msg){
+  const cls = {completed:"ok", failed:"bad", stopped:"warn", running:"warn", starting:"warn"}[state] || "";
+  const label = {starting:"Starting", running:"Running", completed:"Completed", failed:"Failed", stopped:"Stopped", idle:"Idle", replay:"Replay"}[state] || state;
+  $("stateChip").className = "chip " + cls; $("stateChip").textContent = label;
+  if (msg != null) $("stateMsg").textContent = msg;
+}
+function setMode(){
+  const chip = $("modeChip");
+  if (data.source === "file"){ chip.className = "chip warn"; chip.textContent = "Replay of run " + (data.run_id || "unknown") + ", not live"; }
+  else if (data.source === "live"){ chip.className = "chip " + (data.target === "offline" ? "warn" : "ok"); chip.textContent = data.target === "offline" ? "Offline rehearsal · deterministic" : "Live run" + (data.run_id ? " #" + data.run_id : "") + " · SuperGrid"; }
+  else { chip.className = "chip"; chip.textContent = "Idle"; }
+}
+async function startRun(){
+  const prompt = $("prompt").value.trim();
+  $("runErr").hidden = true;
+  if (!prompt){ $("runErr").textContent = "Type a prompt first, or pick an example."; $("runErr").hidden = false; $("prompt").focus(); return; }
+  if (target === "supergrid" && !(conn.flower && conn.flower.ok)){ $("runErr").textContent = "Flower isn’t connected. Run uv run flwr login supergrid, or switch to Offline rehearsal."; $("runErr").hidden = false; return; }
+  reset("live");
+  data.prompt = prompt; data.target = target;
+  const nodes = fedNodes().map(n => n.country).sort();
+  if (target === "supergrid" && nodes.length) setCountries(nodes); else layout();
+  render(0);
+  $("bubble").hidden = false; $("bubbleText").textContent = prompt;
+  setState("starting", target === "offline" ? "Starting an offline rehearsal…" : "Building the app from this repo and starting a run on SuperGrid…");
+  running = true; $("run").hidden = true; $("stop").hidden = false; setMode();
+  const started = performance.now();
+  tick = setInterval(() => {
+    $("elapsed").textContent = ((performance.now() - started) / 1000).toFixed(0) + " s";
+    if (pending.length) $("waitMsg").textContent = "Waiting for " + join(pending) + "… " + ((performance.now() - askedAt) / 1000).toFixed(0) + " s";
+  }, 250);
+  let res;
+  try {
+    res = await fetch("/api/runs", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({prompt, target, federation:$("federation").value || ""})});
+  } catch { return runEnded("failed", "The console server is not responding."); }
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) return runEnded("failed", body.error || "Couldn’t start the run.");
+  run = body.key;
+  es = new EventSource("/api/runs/" + run + "/events");
+  es.onmessage = m => onItem(JSON.parse(m.data));
+  es.addEventListener("end", () => { es.close(); es = null; });
+}
+function onItem(item){
+  if (item.kind === "event") ingest(item.event);
+  else if (item.kind === "text"){ chatText += item.delta; scheduleChat(); }
+  else if (item.kind === "status"){
+    if (item.run_id){ data.run_id = String(item.run_id); setMode(); }
+    if (item.state === "starting" || item.state === "running") setState(item.state, item.message);
+    else runEnded(item.state, item.message);
+  }
+}
+function runEnded(state, msg){
+  if (state === "completed" && data.error){ state = "failed"; msg = data.error; }
+  running = false; clearInterval(tick); pending = []; drawEdges();
+  $("run").hidden = false; $("stop").hidden = true;
+  if (state === "completed" && data.route === "privacy" && !data.assessment) finishPrivacy();
+  if (state === "completed" && !data.events.length && !data.error) pushStep({type:"note", round:"Complete", text:"The run finished without any federation steps."});
+  setState(state, msg || (state === "completed" ? "Run complete." : ""));
+  if (state === "failed"){
+    const c = $("caption"); c.classList.add("error");
+    $("capWho").textContent = "The run failed"; $("capSay").textContent = msg || "Unknown error."; $("capSub").textContent = "Check the node chips above, or switch to Offline rehearsal.";
+  }
+  if (!paused) pump();
+}
+$("run").onclick = startRun;
+$("stop").onclick = async () => {
+  if (!run) return;
+  $("stateMsg").textContent = "Stopping…";
+  try { await fetch("/api/runs/" + run + "/stop", {method:"POST", headers:{"Content-Type":"application/json"}, body:"{}"}); } catch {}
+};
+$("prompt").addEventListener("keydown", e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)){ e.preventDefault(); if (!running) startRun(); } });
+document.querySelectorAll("[data-example]").forEach(b => b.onclick = () => { $("prompt").value = b.dataset.example; $("prompt").focus(); $("runErr").hidden = true; });
+function setTarget(t){
+  target = t;
+  $("t-supergrid").setAttribute("aria-pressed", String(t === "supergrid"));
+  $("t-offline").setAttribute("aria-pressed", String(t === "offline"));
+  drawStatus();
+}
+$("t-supergrid").onclick = () => setTarget("supergrid");
+$("t-offline").onclick = () => setTarget("offline");
+$("federation").onchange = () => drawStatus();
+
+/* ---------- chat transcript (small, safe Markdown) ---------- */
+let chatQueued = false;
+function scheduleChat(){ if (chatQueued) return; chatQueued = true; requestAnimationFrame(() => { chatQueued = false; const box = $("chat"), atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 40; box.innerHTML = md(chatText); if (atEnd) box.scrollTop = box.scrollHeight; }); }
+function inline(s){
+  return esc(s)
+    .replace(/&lt;sub&gt;(.*?)&lt;\/sub&gt;/g, '<small class="muted">$1</small>')
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[\s(])_([^_]+)_(?=[\s).,:;]|$)/g, "$1<em>$2</em>");
+}
+function md(src){
+  const lines = src.split("\n"); let html = "", i = 0;
+  const cells = l => l.trim().replace(/^\||\|$/g, "").split("|").map(c => c.trim());
+  while (i < lines.length){
+    const l = lines[i];
+    if (!l.trim()){ i++; continue; }
+    let m;
+    if ((m = /^(#{1,6})\s+(.*)$/.exec(l))){ const n = Math.min(m[1].length + 1, 5); html += "<h" + n + ">" + inline(m[2]) + "</h" + n + ">"; i++; continue; }
+    if (/^-{3,}\s*$/.test(l)){ html += "<hr>"; i++; continue; }
+    if (/^\s*\|/.test(l)){
+      const rows = []; while (i < lines.length && /^\s*\|/.test(lines[i])) rows.push(lines[i++]);
+      const body = rows.filter(r => !/^\s*\|[\s\-:|]+\|\s*$/.test(r));
+      html += "<table>" + body.map((r, j) => "<tr>" + cells(r).map(c => (j ? "<td>" : "<th>") + inline(c) + (j ? "</td>" : "</th>")).join("") + "</tr>").join("") + "</table>";
+      continue;
+    }
+    if (/^>\s?/.test(l)){
+      const q = []; while (i < lines.length && /^>\s?/.test(lines[i])) q.push(lines[i++].replace(/^>\s?/, ""));
+      html += "<blockquote>" + q.map(inline).join("<br>") + "</blockquote>"; continue;
+    }
+    if (/^\s*[-*]\s+/.test(l)){
+      const items = []; while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) items.push(lines[i++].replace(/^\s*[-*]\s+/, ""));
+      html += "<ul>" + items.map(x => "<li>" + inline(x) + "</li>").join("") + "</ul>"; continue;
+    }
+    const p = []; while (i < lines.length && lines[i].trim() && !/^(#{1,6}\s|>|\s*\||\s*[-*]\s|-{3,})/.test(lines[i])) p.push(lines[i++]);
+    if (!p.length){ p.push(lines[i++]); }
+    html += "<p>" + p.map(inline).join(" ") + "</p>";
+  }
+  return html;
+}
+
+/* ---------- controls ---------- */
+$("play").onclick = () => { paused = !paused; if (paused) stopAnim(); else { if (idx >= data.events.length && !running) render(0); pump(); } setPlay(); };
+$("step").onclick = async () => { paused = true; stopAnim(); setPlay(); const my = ++token; await advance(my); };
+$("back").onclick = () => { paused = true; stopAnim(); render(Math.max(0, idx - 1)); setPlay(); };
+$("scrub").oninput = e => { paused = true; stopAnim(); render(+e.target.value); setPlay(); };
+document.querySelectorAll("[data-speed]").forEach(b => b.onclick = () => {
+  speed = +b.dataset.speed;
+  document.querySelectorAll("[data-speed]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+});
+document.addEventListener("keydown", e => {
+  if (e.target.closest("input,textarea,select,button")) return;
+  if (e.key === " "){ e.preventDefault(); $("play").click(); }
+  if (e.key === "ArrowRight"){ e.preventDefault(); $("step").click(); }
+  if (e.key === "ArrowLeft"){ e.preventDefault(); $("back").click(); }
+});
+
+/* ---------- export and load replays (same format as the published replay page) ---------- */
+function replayJSON(){
+  const events = data.events.flatMap(e => e.type === "checks" ? e.tools.map(tool => ({type:"check", country:e.country, tool})) : [e]);
+  return JSON.stringify({format:"soi-replay/1", run_id:data.run_id || "offline", prompt:data.prompt, target:data.target,
+    countries:data.countries, events, follow_up:data.follow_up, assessment:data.assessment}, null, 2);
+}
+function groupChecks(events){
+  const out = [];
+  events.forEach(e => {
+    const last = out[out.length - 1];
+    if (e.type !== "check") return out.push(e);
+    if (last && last.type === "checks" && last.country === e.country) last.tools.push(e.tool);
+    else out.push({type:"checks", country:e.country, tools:[e.tool]});
+  });
+  return out;
+}
+$("export").onclick = () => {
+  if (!data.events.length){ $("err").textContent = "Run a prompt first; there is nothing to export yet."; $("err").hidden = false; return; }
+  $("err").hidden = true;
+  const url = URL.createObjectURL(new Blob([replayJSON()], {type:"application/json"}));
+  const a = document.createElement("a"); a.href = url; a.download = "replay-" + (data.run_id || "offline") + ".json";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+function loadReplay(d){
+  if (!d || !Array.isArray(d.events) || !d.events.length) throw new Error("The file has no events list.");
+  reset("file");
+  Object.assign(data, {run_id:d.run_id || "", prompt:d.prompt || "", target:d.target || "supergrid", follow_up:d.follow_up || null, assessment:d.assessment || null});
+  const names = (d.countries || []).map(c => c.name || c).filter(Boolean);
+  if (names.length) data.countries = names.map(name => ({name}));
+  layout();
+  $("bubble").hidden = !data.prompt; $("bubbleText").textContent = data.prompt;
+  setState("replay", "Loaded from file. Press Play or use the arrow keys.");
+  setMode();
+  paused = true; setPlay();
+  groupChecks(d.events).forEach(pushStep);
+  render(0);
+}
+function readFile(f){
+  const r = new FileReader();
+  r.onload = () => {
+    $("err").hidden = true;
+    try { loadReplay(JSON.parse(r.result)); }
+    catch (err) { $("err").textContent = (err instanceof SyntaxError ? "That file isn’t valid JSON." : err.message) + " Choose a replay.json exported from this console."; $("err").hidden = false; }
+  };
+  r.readAsText(f);
+}
+$("file").onchange = e => { if (e.target.files[0]) readFile(e.target.files[0]); e.target.value = ""; };
+const drop = $("drop");
+["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => e.dataTransfer.files[0] && readFile(e.dataTransfer.files[0]));
+
+/* ---------- start ---------- */
+data = blank(); layout(); render(0); setPlay();
+refreshStatus().then(() => { if (!(conn.flower && conn.flower.ok)) setTarget("offline"); });
+setInterval(() => { if (!running) refreshStatus(); }, 20000);
+</script>
+</body>
+</html>
